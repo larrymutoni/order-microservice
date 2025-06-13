@@ -1,27 +1,31 @@
-// server.js
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const morgan = require('morgan');
-const orderRoutes = require('./routes/orderRoutes');
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const morgan = require("morgan");
+const orderRoutes = require("./routes/orderRoutes");
+const sequelize = require("./config/db"); // 👈 Add this
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(cors());
-app.use(morgan('dev'));
+app.use(morgan("dev"));
 app.use(express.json());
 
-// Routes
-app.use('/orders', orderRoutes);
+app.use("/orders", orderRoutes);
 
-// Health check
-app.get('/', (req, res) => {
-  res.send('Order Microservice is running!');
+app.get("/", (req, res) => {
+  res.send("Order Microservice is running!");
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+// Sync DB and start server
+sequelize
+  .sync()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running at http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Failed to sync DB:", err);
+  });
