@@ -8,11 +8,25 @@ exports.createOrder = async (req, res) => {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
+  // Validate each item has price
+  const missingPrice = items.some(
+    (item) =>
+      !item.item_id ||
+      typeof item.quantity !== "number" ||
+      typeof item.price !== "number"
+  );
+  if (missingPrice) {
+    return res
+      .status(400)
+      .json({ error: "Each item must include item_id, quantity, and price" });
+  }
+
   try {
     const existing = await Order.findOne({ where: { payment_id } });
-    if (existing) {
-      return res.status(409).json({ error: "Order already exists for this payment" });
-    }
+    if (existing)
+      return res
+        .status(409)
+        .json({ error: "Order already exists for this payment" });
 
     const newOrder = await Order.create({
       user_id,
@@ -23,11 +37,18 @@ exports.createOrder = async (req, res) => {
     });
 
     res.status(201).json({ orderId: newOrder.id });
+
+    emitter.emit("OrderCreated", {
+      orderId: newOrder.id,
+      user_id,
+      restaurant_id,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to create order" });
   }
 };
+
 
 // Get all orders (use with caution - admin/internal only)
 exports.getOrders = async (req, res) => {
