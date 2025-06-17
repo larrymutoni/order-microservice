@@ -5,24 +5,30 @@ const db = require("../config/db");
 
 /**
  * @swagger
+ * tags:
+ *   name: Orders
+ *   description: Endpoints for managing orders
+ */
+
+/**
+ * @swagger
  * /orders/ping-db:
  *   get:
- *     summary: Test the DB connection
+ *     summary: Ping the database
+ *     tags: [Orders]
  *     responses:
  *       200:
- *         description: Successful DB ping
+ *         description: Database connection is working
  *       500:
- *         description: Database connection error
+ *         description: Database connection failed
  */
 router.get("/ping-db", async (req, res) => {
   try {
-    const [rows] = await db.execute("SELECT 1 + 1 AS result");
-    res.json({ success: true, result: rows[0].result });
+    const [results] = await db.query("SELECT 1 + 1 AS result");
+    res.json({ success: true, result: results[0].result });
   } catch (error) {
     console.error("Ping DB error:", error);
-    res
-      .status(500)
-      .json({ success: false, error: error.message || "Unknown error" });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -31,37 +37,35 @@ router.get("/ping-db", async (req, res) => {
  * /orders:
  *   post:
  *     summary: Create a new order
+ *     tags: [Orders]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - user_id
+ *               - restaurant_id
+ *               - payment_id
+ *               - delivery_address
+ *               - items
  *             properties:
  *               user_id:
  *                 type: integer
- *                 example: 1
  *               restaurant_id:
  *                 type: integer
- *                 example: 5
  *               payment_id:
- *                 type: integer
- *                 example: 10
+ *                 type: string
  *               delivery_address:
  *                 type: string
- *                 example: "123 Avenue A"
  *               items:
  *                 type: array
  *                 items:
  *                   type: object
- *                   properties:
- *                     item_id:
- *                       type: integer
- *                     quantity:
- *                       type: integer
  *     responses:
  *       201:
- *         description: Order created successfully
+ *         description: Order created
  */
 router.post("/", orderController.createOrder);
 
@@ -70,9 +74,10 @@ router.post("/", orderController.createOrder);
  * /orders:
  *   get:
  *     summary: Get all orders
+ *     tags: [Orders]
  *     responses:
  *       200:
- *         description: A list of all orders
+ *         description: List of all orders
  */
 router.get("/", orderController.getOrders);
 
@@ -80,16 +85,18 @@ router.get("/", orderController.getOrders);
  * @swagger
  * /orders/{id}:
  *   get:
- *     summary: Get a specific order by ID
+ *     summary: Get an order by ID
+ *     tags: [Orders]
  *     parameters:
  *       - in: path
  *         name: id
- *         required: true
  *         schema:
  *           type: integer
+ *         required: true
+ *         description: Order ID
  *     responses:
  *       200:
- *         description: Order found
+ *         description: Order data
  *       404:
  *         description: Order not found
  */
@@ -97,15 +104,52 @@ router.get("/:id", orderController.getOrderById);
 
 /**
  * @swagger
+ * /orders/user/{userId}:
+ *   get:
+ *     summary: Get orders for a specific user
+ *     tags: [Orders]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         schema:
+ *           type: integer
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Orders belonging to the user
+ */
+router.get("/user/:userId", orderController.getOrdersByUserId);
+
+/**
+ * @swagger
+ * /orders/restaurant/{restaurantId}:
+ *   get:
+ *     summary: Get orders for a specific restaurant
+ *     tags: [Orders]
+ *     parameters:
+ *       - in: path
+ *         name: restaurantId
+ *         schema:
+ *           type: integer
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Orders for the restaurant
+ */
+router.get("/restaurant/:restaurantId", orderController.getOrdersByRestaurantId);
+
+/**
+ * @swagger
  * /orders/{id}/status:
  *   patch:
  *     summary: Update the status of an order
+ *     tags: [Orders]
  *     parameters:
  *       - in: path
  *         name: id
- *         required: true
  *         schema:
  *           type: integer
+ *         required: true
  *     requestBody:
  *       required: true
  *       content:
@@ -115,10 +159,10 @@ router.get("/:id", orderController.getOrderById);
  *             properties:
  *               status:
  *                 type: string
- *                 example: "delivered"
+ *                 example: confirmed
  *     responses:
  *       200:
- *         description: Order status updated
+ *         description: Status updated
  *       404:
  *         description: Order not found
  */
