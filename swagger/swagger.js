@@ -1,3 +1,4 @@
+// swagger/swagger.js
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 
@@ -9,8 +10,22 @@ const options = {
       version: "1.0.0",
       description: "API documentation for the Order Microservice",
     },
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
   },
-  apis: ["./routes/*.js"], // ← looks in your routes folder for Swagger comments
+  apis: ["./routes/*.js"], // ← this stays
 };
 
 const specs = swaggerJsdoc(options);

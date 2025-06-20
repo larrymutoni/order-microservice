@@ -13,19 +13,16 @@ app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());
 
-// Setup Swagger BEFORE your routes
 setupSwagger(app); // ← mount Swagger at /api-docs
 
-// Register order routes
 app.use("/orders", orderRoutes);
 
 app.get("/", (req, res) => {
   res.send("Order Microservice is running!");
 });
 
-// Sync DB and start server
 sequelize
-  .sync()
+  .sync() // Set force to false to avoid dropping tables on every restart
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}`);

@@ -1,14 +1,14 @@
+// controllers/orderController.js
 const Order = require("../models/orderModel");
 
-// Create a new order
 exports.createOrder = async (req, res) => {
-  const { user_id, restaurant_id, payment_id, delivery_address, items } = req.body;
+  const { restaurant_id, payment_id, delivery_address, items } = req.body;
+  const uuid = req.user.uuid;
 
-  if (!user_id || !restaurant_id || !payment_id || !delivery_address || !items) {
+  if (!restaurant_id || !payment_id || !delivery_address || !items) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  // Validate each item has price
   const missingPrice = items.some(
     (item) =>
       !item.item_id ||
@@ -29,7 +29,7 @@ exports.createOrder = async (req, res) => {
         .json({ error: "Order already exists for this payment" });
 
     const newOrder = await Order.create({
-      user_id,
+      uuid,
       restaurant_id,
       payment_id,
       delivery_address,
@@ -37,20 +37,12 @@ exports.createOrder = async (req, res) => {
     });
 
     res.status(201).json({ orderId: newOrder.id });
-
-    emitter.emit("OrderCreated", {
-      orderId: newOrder.id,
-      user_id,
-      restaurant_id,
-    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to create order" });
   }
 };
 
-
-// Get all orders (use with caution - admin/internal only)
 exports.getOrders = async (req, res) => {
   try {
     const orders = await Order.findAll();
@@ -61,7 +53,6 @@ exports.getOrders = async (req, res) => {
   }
 };
 
-// Get one order by ID
 exports.getOrderById = async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
@@ -76,27 +67,27 @@ exports.getOrderById = async (req, res) => {
   }
 };
 
-// Get orders for a specific user
-exports.getOrdersByUserId = async (req, res) => {
-  const userId = parseInt(req.params.userId);
-  if (isNaN(userId)) return res.status(400).json({ error: "Invalid user ID" });
+exports.getMyOrders = async (req, res) => {
+  const uuid = req.user.uuid;
 
   try {
-    const orders = await Order.findAll({ where: { user_id: userId } });
+    const orders = await Order.findAll({ where: { uuid } });
     res.json(orders);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to fetch user orders" });
+    res.status(500).json({ error: "Failed to fetch your orders" });
   }
 };
 
-// Get orders for a specific restaurant
 exports.getOrdersByRestaurantId = async (req, res) => {
   const restaurantId = parseInt(req.params.restaurantId);
-  if (isNaN(restaurantId)) return res.status(400).json({ error: "Invalid restaurant ID" });
+  if (isNaN(restaurantId))
+    return res.status(400).json({ error: "Invalid restaurant ID" });
 
   try {
-    const orders = await Order.findAll({ where: { restaurant_id: restaurantId } });
+    const orders = await Order.findAll({
+      where: { restaurant_id: restaurantId },
+    });
     res.json(orders);
   } catch (err) {
     console.error(err);
@@ -104,7 +95,6 @@ exports.getOrdersByRestaurantId = async (req, res) => {
   }
 };
 
-// Update order status
 exports.updateOrderStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;

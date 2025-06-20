@@ -1,10 +1,11 @@
+// models/orderModel.js
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
 
 const Order = sequelize.define(
   "Order",
   {
-    user_id: { type: DataTypes.INTEGER, allowNull: false },
+    uuid: { type: DataTypes.STRING, allowNull: false }, // ✅ renamed to uuid
     restaurant_id: { type: DataTypes.INTEGER, allowNull: false },
     payment_id: { type: DataTypes.STRING, allowNull: false, unique: true },
     delivery_address: { type: DataTypes.STRING, allowNull: false },

@@ -1,13 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const orderController = require("../controllers/orderController");
-const db = require("../config/db");
+const authenticateJWT = require("../middleware/authenticateJWT");
 
 /**
  * @swagger
  * tags:
  *   name: Orders
- *   description: Endpoints for managing orders
+ *   description: Order management endpoints
  */
 
 /**
@@ -18,16 +18,13 @@ const db = require("../config/db");
  *     tags: [Orders]
  *     responses:
  *       200:
- *         description: Database connection is working
- *       500:
- *         description: Database connection failed
+ *         description: Database is responsive
  */
 router.get("/ping-db", async (req, res) => {
   try {
-    const [results] = await db.query("SELECT 1 + 1 AS result");
+    const [results] = await require("../config/db").query("SELECT 1 + 1 AS result");
     res.json({ success: true, result: results[0].result });
   } catch (error) {
-    console.error("Ping DB error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -38,6 +35,8 @@ router.get("/ping-db", async (req, res) => {
  *   post:
  *     summary: Create a new order
  *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -45,14 +44,11 @@ router.get("/ping-db", async (req, res) => {
  *           schema:
  *             type: object
  *             required:
- *               - user_id
  *               - restaurant_id
  *               - payment_id
  *               - delivery_address
  *               - items
  *             properties:
- *               user_id:
- *                 type: integer
  *               restaurant_id:
  *                 type: integer
  *               payment_id:
@@ -67,13 +63,13 @@ router.get("/ping-db", async (req, res) => {
  *       201:
  *         description: Order created
  */
-router.post("/", orderController.createOrder);
+router.post("/", authenticateJWT, orderController.createOrder);
 
 /**
  * @swagger
  * /orders:
  *   get:
- *     summary: Get all orders
+ *     summary: Get all orders (no auth)
  *     tags: [Orders]
  *     responses:
  *       200:
@@ -83,9 +79,23 @@ router.get("/", orderController.getOrders);
 
 /**
  * @swagger
+ * /orders/my-orders:
+ *   get:
+ *     summary: Get my orders (user's own)
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Orders for the logged-in user
+ */
+router.get("/my-orders", authenticateJWT, orderController.getMyOrders);
+
+/**
+ * @swagger
  * /orders/{id}:
  *   get:
- *     summary: Get an order by ID
+ *     summary: Get order by ID
  *     tags: [Orders]
  *     parameters:
  *       - in: path
@@ -96,35 +106,15 @@ router.get("/", orderController.getOrders);
  *         description: Order ID
  *     responses:
  *       200:
- *         description: Order data
- *       404:
- *         description: Order not found
+ *         description: Order found
  */
 router.get("/:id", orderController.getOrderById);
 
 /**
  * @swagger
- * /orders/user/{userId}:
- *   get:
- *     summary: Get orders for a specific user
- *     tags: [Orders]
- *     parameters:
- *       - in: path
- *         name: userId
- *         schema:
- *           type: integer
- *         required: true
- *     responses:
- *       200:
- *         description: Orders belonging to the user
- */
-router.get("/user/:userId", orderController.getOrdersByUserId);
-
-/**
- * @swagger
  * /orders/restaurant/{restaurantId}:
  *   get:
- *     summary: Get orders for a specific restaurant
+ *     summary: Get orders for a restaurant
  *     tags: [Orders]
  *     parameters:
  *       - in: path
@@ -134,7 +124,7 @@ router.get("/user/:userId", orderController.getOrdersByUserId);
  *         required: true
  *     responses:
  *       200:
- *         description: Orders for the restaurant
+ *         description: Orders found
  */
 router.get("/restaurant/:restaurantId", orderController.getOrdersByRestaurantId);
 
@@ -142,7 +132,7 @@ router.get("/restaurant/:restaurantId", orderController.getOrdersByRestaurantId)
  * @swagger
  * /orders/{id}/status:
  *   patch:
- *     summary: Update the status of an order
+ *     summary: Update status of an order
  *     tags: [Orders]
  *     parameters:
  *       - in: path
@@ -163,8 +153,6 @@ router.get("/restaurant/:restaurantId", orderController.getOrdersByRestaurantId)
  *     responses:
  *       200:
  *         description: Status updated
- *       404:
- *         description: Order not found
  */
 router.patch("/:id/status", orderController.updateOrderStatus);
 
