@@ -4,9 +4,9 @@ exports.createOrder = async (req, res) => {
   const { restaurant_id, payment_id, delivery_address, items } = req.body;
   const uuid = req.user.uuid;
 
-  if (!restaurant_id || !payment_id || !delivery_address || !items) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
+  // if (!restaurant_id || !payment_id || !delivery_address || !items) {
+  //   return res.status(400).json({ error: "Missing required fields" });
+  // }
 
   const missingPrice = items.some(
     (item) =>
