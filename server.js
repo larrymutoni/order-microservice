@@ -13,6 +13,11 @@ app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());
 
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+  credentials: true
+}));
+
 setupSwagger(app);
 
 app.use("/orders", orderRoutes);
