@@ -4,11 +4,11 @@ const sequelize = require("../config/db");
 const Order = sequelize.define(
   "Order",
   {
-    uuid: { type: DataTypes.STRING, allowNull: false }, // ✅ renamed to uuid
-    restaurant_id: { type: DataTypes.STRING, allowNull: false },
-    payment_id: { type: DataTypes.STRING, allowNull: false, unique: true },
-    delivery_address: { type: DataTypes.STRING, allowNull: false },
-    items: { type: DataTypes.JSON, allowNull: false },
+    uuid: { type: DataTypes.STRING, allowNull: true },
+    restaurant_id: { type: DataTypes.STRING, allowNull: true },
+    payment_id: { type: DataTypes.STRING, allowNull: true, unique: true },
+    delivery_address: { type: DataTypes.STRING, allowNull: true },
+    items: { type: DataTypes.JSON, allowNull: true },
     status: {
       type: DataTypes.ENUM(
         "pending",
