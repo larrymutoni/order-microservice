@@ -1,4 +1,3 @@
-// routes/orderRoutes.js
 const express = require("express");
 const router = express.Router();
 const orderController = require("../controllers/orderController");
@@ -53,7 +52,6 @@ router.get("/ping-db", async (req, res) => {
  *                 type: string
  *               payment_id:
  *                 type: string
- *                 description: Optional initially; omit or null when creating before payment
  *               delivery_address:
  *                 type: string
  *               items:
@@ -117,6 +115,8 @@ router.get("/my-orders", authenticateJWT, orderController.getMyOrders);
  *     responses:
  *       200:
  *         description: Order found
+ *       404:
+ *         description: Order not found
  */
 router.get("/:id", orderController.getOrderById);
 
@@ -132,9 +132,12 @@ router.get("/:id", orderController.getOrderById);
  *         schema:
  *           type: string
  *         required: true
+ *         description: Restaurant ID
  *     responses:
  *       200:
  *         description: Orders found
+ *       404:
+ *         description: Restaurant not found
  */
 router.get("/restaurant/:restaurantId", orderController.getOrdersByRestaurantId);
 
@@ -142,14 +145,17 @@ router.get("/restaurant/:restaurantId", orderController.getOrdersByRestaurantId)
  * @swagger
  * /orders/{id}/status:
  *   patch:
- *     summary: Update status of an order (e.g., preparing, out_for_delivery, etc.)
+ *     summary: Update status of an order
  *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         schema:
  *           type: integer
  *         required: true
+ *         description: Order ID
  *     requestBody:
  *       required: true
  *       content:
@@ -197,11 +203,9 @@ router.patch("/:id/status", authenticateJWT, orderController.updateOrderStatus);
  *             properties:
  *               payment_id:
  *                 type: string
- *                 description: The real payment identifier once paid
  *               status:
  *                 type: string
  *                 enum: [confirmed, cancelled]
- *                 description: New status after payment
  *     responses:
  *       200:
  *         description: Payment_id and status updated
@@ -212,10 +216,55 @@ router.patch("/:id/status", authenticateJWT, orderController.updateOrderStatus);
  *       409:
  *         description: Conflict (payment_id already used or order already processed)
  */
-router.patch(
-  "/:id/payment",
-  authenticateJWT,
-  orderController.updatePayment
-);
+router.patch("/:id/payment", authenticateJWT, orderController.updatePayment);
+
+/**
+ * @swagger
+ * /orders/{id}:
+ *   patch:
+ *     summary: Update full order details
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Order ID to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               delivery_address:
+ *                 type: string
+ *               payment_id:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     item_id:
+ *                       type: integer
+ *                     quantity:
+ *                       type: integer
+ *                     price:
+ *                       type: number
+ *     responses:
+ *       200:
+ *         description: Order details updated successfully
+ *       400:
+ *         description: Invalid request
+ *       404:
+ *         description: Order not found
+ */
+router.patch("/:id", authenticateJWT, orderController.updateOrderDetails);
 
 module.exports = router;

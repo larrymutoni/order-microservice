@@ -53,6 +53,31 @@ exports.createOrder = async (req, res) => {
   }
 };
 
+
+exports.updateOrderDetails = async (req, res) => {
+  //  update order details like delivery address or items, payment_id, status
+  const { id } = req.params;
+  const { delivery_address, items, payment_id, status } = req.body;
+
+  try {
+    const order = await Order.findByPk(id);
+    if (!order) return res.status(404).json({ error: "Order not found" });
+
+    // Update order details
+    order.delivery_address = delivery_address || order.delivery_address;
+    order.items = items || order.items;
+    order.payment_id = payment_id || order.payment_id;
+    order.status = status || order.status;
+
+    await order.save();
+
+    res.json({ message: "Order updated", orderId: id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch orders" });
+  }
+};
+
 exports.getOrders = async (req, res) => {
   try {
     const orders = await Order.findAll();
@@ -163,12 +188,25 @@ exports.updatePayment = async (req, res) => {
     if (order.payment_id) {
       // If same payment_id and already same status, just return OK:
       if (order.payment_id === payment_id && order.status === status) {
-        return res.json({ message: "No change; same payment/status", orderId: id });
+        return res.json({
+          message: "No change; same payment/status",
+          orderId: id,
+        });
       }
       // Otherwise, if different payment_id or status, you may block or allow based on business rules.
       // Here: disallow if already confirmed or cancelled:
-      if (["confirmed", "cancelled", "preparing", "out_for_delivery", "delivered"].includes(order.status)) {
-        return res.status(409).json({ error: "Order already processed with a payment" });
+      if (
+        [
+          "confirmed",
+          "cancelled",
+          "preparing",
+          "out_for_delivery",
+          "delivered",
+        ].includes(order.status)
+      ) {
+        return res
+          .status(409)
+          .json({ error: "Order already processed with a payment" });
       }
     }
 
